@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'views/login.dart';
+import 'views/mainpage.dart';
 import 'package:firebase_core/firebase_core.dart';
-void main() async {
-  await Firebase.initializeApp();
-  runApp(MyApp());
+
+void main() {
+  runApp(MaterialApp(home: Mainpage()));
 }
 
 class MyApp extends StatelessWidget {
@@ -24,8 +25,7 @@ class MyApp extends StatelessWidget {
         // is not restarted.
         primarySwatch: Colors.blue,
       ),
-      home : LoginPage(),
+      home: LoginPage(),
     );
   }
 }
-

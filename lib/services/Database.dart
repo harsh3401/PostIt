@@ -16,7 +16,6 @@ class DatabaseService{
   }
 
   Future? getPost(String quizId)async{
-    Stream stream;
     try{
       return await _firestore.collection("posts").doc(quizId);
     }catch(err){
@@ -42,6 +41,65 @@ class DatabaseService{
     }
   }
 
+  Future<void> addComment({required String postId,required String authorId,required String commenttext})async{
+
+     Map<String,dynamic> newComment = {
+       "author" : authorId,
+       "commenttext" : commenttext,
+     };
+
+     try{
+       await _firestore.collection("posts").doc(postId).collection("comments").add(newComment)
+       .catchError((err)=>{print(err)});
+     }catch(error){
+       print(error);
+     }
+  }
 
 
+
+  Future<Stream?> getAllComments({required String postId})async{
+     Stream stream;
+     try{
+       stream = await _firestore.collection("posts").doc(postId).collection("comments").snapshots();
+       return stream;
+     }catch(e){
+       print(e);
+       return null;
+     }
+  }
+
+  Future<Stream?> getAllReplies({required String postId,required String commentId})async{
+    Stream stream;
+
+    try{
+      stream = await _firestore.collection("posts").doc(postId).collection("comments").doc(commentId).collection("replies").snapshots();
+      return stream;
+    }catch(e){
+      print(e);
+      return null;
+    }
+  }
+
+  Future<void> addReply({required String postId,required String replytext,required String commentId,required String authorId})async{
+    Map<String,dynamic> newReply = {
+      "author" : authorId,
+      "replytext" : replytext,
+    };
+    await _firestore.collection("posts").doc(postId).collection("comments").doc(commentId).collection("replies").add(newReply)
+    .catchError((error)=>{print(error)});
+  }
+
+  Future<Map<String,dynamic>> getUser({required String userId})async{
+    DocumentReference documentReference;
+    documentReference =  _firestore.collection("users").doc(userId);
+    Map<String,dynamic> data = {};
+    documentReference.get().then((value)=>{
+       data = value.data()!,
+       print(data),
+    }).catchError((err)=>{
+      print(err)
+    });
+    return data;
+  }
 }

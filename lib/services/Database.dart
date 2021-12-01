@@ -45,6 +45,7 @@ class DatabaseService {
   Future<void> addComment(
       {required String postId,
       required String authorId,
+      required Timestamp created,
       required String commenttext}) async {
     Map<String, dynamic> newComment = {
       "author": authorId,
@@ -99,7 +100,8 @@ class DatabaseService {
 
   Future<void> addReply(
       {required String postId,
-      required String replytext,
+      required String? replytext,
+      required Timestamp created,
       required String commentId,
       required String authorId}) async {
     Map<String, dynamic> newReply = {
@@ -116,17 +118,9 @@ class DatabaseService {
         .catchError((error) => {print(error)});
   }
 
-  Future<Map<String, dynamic>> getUser({required String userId}) async {
+  DocumentReference getUser({required String userId}) {
     DocumentReference documentReference;
     documentReference = _firestore.collection("users").doc(userId);
-    Map<String, dynamic> data = {};
-    documentReference
-        .get()
-        .then((value) => {
-              data = value.data()!,
-              print(data),
-            })
-        .catchError((err) => {print(err)});
-    return data;
+    return documentReference;
   }
 }

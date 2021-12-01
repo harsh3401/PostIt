@@ -1,6 +1,8 @@
 import 'dart:io';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:post_it/views/postDetail.dart';
 import 'package:random_string/random_string.dart';
 import '/services/Database.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -18,6 +20,7 @@ class Mainpage extends StatefulWidget {
 
 class _MainpageState extends State<Mainpage> {
   XFile? sampleImage;
+
   Future getImage() async {
     var tempImage = await ImagePicker().pickImage(source: ImageSource.gallery);
     setState(() {
@@ -28,6 +31,8 @@ class _MainpageState extends State<Mainpage> {
   Stream? PostStream;
   String? question;
   String? desc;
+  String? imgURL;
+
   void insertData() async {
     FirebaseAuth _auth = FirebaseAuth.instance;
     DatabaseService databaseService = new DatabaseService();
@@ -58,55 +63,63 @@ class _MainpageState extends State<Mainpage> {
               : ListView.builder(
                   itemCount: snapshot.data.docs.length,
                   itemBuilder: (context, index) {
-                    return Card(
-                      clipBehavior: Clip.antiAlias,
-                      child: Column(
-                        children: [
-                          ListTile(
-                            leading: CircleAvatar(
-                              backgroundImage: AssetImage('assets/stack.jpg'),
+                    return GestureDetector(
+                      onTap: () async {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => PostDetail(
+                                    postId: snapshot.data.docs[index].id)));
+                      },
+                      child: Card(
+                        clipBehavior: Clip.antiAlias,
+                        child: Column(
+                          children: [
+                            ListTile(
+                              leading: CircleAvatar(
+                                backgroundImage: AssetImage('assets/stack.jpg'),
+                              ),
+                              title: Text(
+                                snapshot.data.docs[index].data()['Question'],
+                              ),
+                              subtitle: Text(
+                                'Timestamp',
+                                style: TextStyle(
+                                    color: Colors.black.withOpacity(0.6)),
+                              ),
                             ),
-                            title: Text(
-                              snapshot.data.docs[index].data()['Question'],
+                            Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Text(
+                                snapshot.data.docs[index].data()['Description'],
+                                style: TextStyle(
+                                    color: Colors.black.withOpacity(0.6)),
+                              ),
                             ),
-                            subtitle: Text(
-                              'Timestamp',
-                              style: TextStyle(
-                                  color: Colors.black.withOpacity(0.6)),
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Text(
-                              snapshot.data.docs[index].data()['Description'],
-                              style: TextStyle(
-                                  color: Colors.black.withOpacity(0.6)),
-                            ),
-                          ),
-                          ButtonBar(
-                            alignment: MainAxisAlignment.start,
-                            children: [
-                              TextButton(
-                                style: TextButton.styleFrom(
-                                  primary: Colors.black,
+                            ButtonBar(
+                              alignment: MainAxisAlignment.start,
+                              children: [
+                                TextButton(
+                                  style: TextButton.styleFrom(
+                                    primary: Colors.black,
+                                  ),
+                                  onPressed: () {
+                                    // Perform some action
+                                  },
+                                  child: const Icon(Icons.comment),
                                 ),
-                                onPressed: () {
-                                  // Perform some action
-                                },
-                                child: const Icon(Icons.comment),
-                              ),
-                              TextButton(
-                                style:
-                                    TextButton.styleFrom(primary: Colors.black),
-                                onPressed: () {
-                                  // Perform some action
-                                },
-                                child: const Icon(Icons.favorite),
-                              ),
-                            ],
-                          ),
-                          //Image.asset('assets/reddit.jpg'),
-                        ],
+                                TextButton(
+                                  style: TextButton.styleFrom(
+                                      primary: Colors.black),
+                                  onPressed: () {
+                                    // Perform some action
+                                  },
+                                  child: const Icon(Icons.favorite),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     );
                   });
@@ -115,12 +128,6 @@ class _MainpageState extends State<Mainpage> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         title: Text('Home'),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.search),
-            onPressed: () {},
-          )
-        ],
       ),
       bottomNavigationBar: SizedBox(
         child: BottomAppBar(
@@ -167,6 +174,7 @@ class _MainpageState extends State<Mainpage> {
         return AlertDialog(
           title: new Text("Post what is on your mind"),
           content: Form(
+            key: _formKey,
             child: Column(
               children: [
                 TextFormField(
@@ -206,11 +214,21 @@ class _MainpageState extends State<Mainpage> {
                         "Question": question,
                         "Description": desc,
                         "Author": currentuser!.uid,
+                        "imgURL": imgURL,
+                        "created": Timestamp.now(),
                       };
                       String postId = randomAlphaNumeric(16);
+
                       await database
                           .createNewPost(newPost, postId)!
-                          .then((val) => {print("New post made..")});
+                          .then((val) => {
+                                print("New post made.."),
+                                setState(() {
+                                  imgURL = "";
+                                  desc = "";
+                                  question = "";
+                                }),
+                              });
                     }
                   },
                   child: Text("Publish"),
@@ -219,7 +237,7 @@ class _MainpageState extends State<Mainpage> {
                       padding: MaterialStateProperty.all(EdgeInsets.all(10.0))),
                 ),
                 sampleImage == null ? Text('Select Image') : enableUpload(),
-                TextButton(onPressed: getImage, child: Text('Upload '))
+                TextButton(onPressed: getImage, child: Text('Select Image'))
               ],
             ),
           ),
@@ -237,26 +255,37 @@ class _MainpageState extends State<Mainpage> {
   }
 
   Widget enableUpload() {
-    print("in enable upload");
+    var randomno = Random(25);
     return Container(
       child: Column(children: [
         Image.file(
           File(sampleImage!.path),
-          height: 300.0,
-          width: 300.0,
+          height: 250.0,
+          width: 350.0,
         ),
         ElevatedButton(
           onPressed: () async {
+            String val = randomno.nextInt(5000).toString();
             FirebaseStorage storage = FirebaseStorage.instance;
-            Reference ref = storage.ref().child('test.jpg');
+            Reference ref = storage.ref().child('postpic/${val}.jpg');
+
             TaskSnapshot uploadTask =
                 await ref.putFile(File(sampleImage!.path));
+
+            await storage
+                .ref('postpic/${val}.jpg')
+                .getDownloadURL()
+                .then((data) => {
+                      setState(() {
+                        imgURL = data;
+                      })
+                    });
+            print('Uploaded the image');
           },
           child: Text('Upload'),
           style: ElevatedButton.styleFrom(
-              elevation: 7,
+              elevation: 2,
               primary: Colors.redAccent,
-              padding: EdgeInsets.symmetric(horizontal: 5, vertical: 2),
               textStyle: TextStyle(fontSize: 3, fontWeight: FontWeight.bold)),
         ),
       ]),

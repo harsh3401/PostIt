@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:post_it/services/Database.dart';
 
 class AuthService {
   FirebaseAuth _auth = FirebaseAuth.instance;
@@ -18,28 +19,12 @@ class AuthService {
         email: email!,
         password: password!,
       );
-      Map<String, dynamic> newUser = {
-        'name': name,
-        'email': email,
-        'image': userCredential.user!.photoURL,
-        'favourites': [],
-        'posts': [],
-        'answers': []
-      };
+      String url = 'https://www.w3schools.com/howto/img_avatar.png';
       user = userCredential.user;
+      print(user);
       await user!.updateDisplayName(name);
+      await user.updatePhotoURL(url);
       await user.reload();
-      user = _auth.currentUser;
-      await _firestore
-          .collection('users')
-          .doc(userCredential.user!.uid)
-          .set(newUser)
-          .then((res) => {
-                print("Saved the user succesfully into firestore"),
-              })
-          .catchError((err) => {
-                print(err),
-              });
     } on FirebaseAuthException catch (e) {
       if (e.code == 'weak-password') {
         print('The password provided is too weak.');

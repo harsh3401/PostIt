@@ -4,6 +4,20 @@ import 'package:firebase_auth/firebase_auth.dart';
 class DatabaseService {
   FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  Future? createNewUser(userId, newUser) async {
+    await _firestore
+        .collection('users')
+        .doc(userId)
+        .set(newUser)
+        .then((res) => {
+              print("Saved the user succesfully into firestore"),
+            })
+        .catchError((err) => {
+              print('here in errror'),
+              print(err),
+            });
+  }
+
   Future? getPostData() async {
     return await _firestore.collection("posts").snapshots();
   }
@@ -44,11 +58,13 @@ class DatabaseService {
 
   Future<void> addComment(
       {required String postId,
-      required String authorId,
-      required Timestamp created,
+      required String? authorname,
+      required String? authorimage,
+      required String created,
       required String commenttext}) async {
     Map<String, dynamic> newComment = {
-      "author": authorId,
+      "authorname": authorname,
+      "authorimage": authorimage,
       "commenttext": commenttext,
     };
 
@@ -103,9 +119,11 @@ class DatabaseService {
       required String? replytext,
       required Timestamp created,
       required String commentId,
-      required String authorId}) async {
+      required String? authorname,
+      required String? authorimage}) async {
     Map<String, dynamic> newReply = {
-      "author": authorId,
+      "authorname": authorname,
+      "authorimage": authorimage,
       "replytext": replytext,
     };
     await _firestore
@@ -122,5 +140,20 @@ class DatabaseService {
     DocumentReference documentReference;
     documentReference = _firestore.collection("users").doc(userId);
     return documentReference;
+  }
+
+  Future? updateUserInfo(newData, userId) async {
+    DocumentReference reference;
+    reference = _firestore.collection("users").doc(userId);
+    Map<String, dynamic>? fetchedData;
+    reference.get().then((value) {
+      fetchedData = value.data();
+    });
+    print('fetchedData is $fetchedData');
+    if (fetchedData != null) {
+      await reference.update(newData).catchError((e) => {
+            print(e),
+          });
+    }
   }
 }

@@ -4,7 +4,6 @@ import 'views/login.dart';
 import 'views/mainpage.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'views/Register.dart';
-import 'views/profile.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
